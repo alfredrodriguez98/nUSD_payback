@@ -12,6 +12,17 @@ async function main() {
   await stablecoin.deployed();
 
   console.log("Stablecoin contract deployed to:", stablecoin.address);
+
+   const MockAggregatorV3 = await hre.ethers.getContractFactory(
+     "MockAggregatorV3"
+   );
+   const mockAggregatorV3 = await MockAggregatorV3.deploy();
+   await mockAggregatorV3.deployed();
+
+   console.log(
+     "MockAggregatorV3 contract deployed to:",
+     mockAggregatorV3.address
+   );
 }
 
 // We recommend this pattern to be able to use async/await everywhere
