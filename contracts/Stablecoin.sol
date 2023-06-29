@@ -16,12 +16,14 @@ contract Stablecoin is ERC20, Ownable {
     // Get the latest price of USD in ETH.
     function getLatestPrice() public view returns (int) {
         (,int price,,,) = priceFeed.latestRoundData();
+        require(price != 0, "Price cannot be zero");
         return price;
     }
 
     // Adjust the supply of the coin based on the price of USD.
-    function adjustSupply() public onlyOwner {
+    function adjustSupply() public {
         int price = getLatestPrice();
+         require(price != 0, "Price cannot be zero");
 
         // If price is greater than 1, mint new coins.
         if (price > 100016141) {
