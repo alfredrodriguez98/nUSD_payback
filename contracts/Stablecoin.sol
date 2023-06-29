@@ -5,7 +5,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract nUSD is ERC20, Ownable {
+contract Stablecoin is ERC20, Ownable {
     AggregatorV3Interface internal priceFeed;
 
     constructor() ERC20("nUSD", "NUSD") {
