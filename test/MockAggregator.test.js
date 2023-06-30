@@ -25,17 +25,28 @@ describe("Checking the functionalities of Aggregator contract using MockAggregat
     expect(await stablecoin.symbol()).to.equal("NUSD");
   });
 
-  it("Should return the price of the stablecoin", async () => {
-    const mockPrice = 100074652;
-
-    await mockAggregator.setPrice(mockPrice);
+  it("Should return the price of pegged coin from oracle", async () => {
+    const updatedPrice = await stablecoin.getLatestPrice();
     const latestPrice = await stablecoin.getLatestPrice();
-
-    expect(latestPrice).to.be.equal(mockPrice);
+    expect(latestPrice).to.be.equal(updatedPrice);
   });
 
-   it("Should get the latest price and not be zero", async function () {
-     const price = await stablecoin.getLatestPrice();
-     expect(price).to.not.equal(0);
-   });
+  it("Should get the latest price and not be zero", async function () {
+    const price = await stablecoin.getLatestPrice();
+    expect(price).to.not.equal(0);
+  });
+
+  it("Should adjust the supply", async function () {
+    await stablecoin.adjustSupply();
+    const benchmarkPrice = 100016141;
+    const price = await stablecoin.getLatestPrice();
+    const totalSupply = await stablecoin.totalSupply();
+    if (price > benchmarkPrice) {
+      expect(totalSupply).to.be.gt(BigNumber.from("1000000000000000000"));
+    } else if (price < benchmarkPrice) {
+      expect(totalSupply).to.be.lt(BigNumber.from("1000000000000000000"));
+    } else {
+      expect(totalSupply).to.be.eq(BigNumber.from("1000000000000000000"));
+    }
+  });
 });
