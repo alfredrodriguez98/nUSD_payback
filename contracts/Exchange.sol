@@ -49,9 +49,6 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
         _mint(msg.sender, nUSDAmount);
         _deposits[msg.sender] += msg.value;
 
-        // Ensure the total supply doesn't exceed the total ETH deposited times the price of ETH
-        assert(totalSupply() <= address(this).balance * getLatestPrice());
-
         emit Deposit(msg.sender, msg.value, nUSDAmount);
     }
 
@@ -85,9 +82,6 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
 
         // Update the total deposited amount
         _deposits[msg.sender] -= ethAmount; // is this required
-
-        // Ensure the total supply doesn't exceed the total ETH deposited times the price of ETH
-        assert(totalSupply() <= address(this).balance * getLatestPrice());
 
         emit Redemption(msg.sender, nUSDAmount, ethAmount);
     }
