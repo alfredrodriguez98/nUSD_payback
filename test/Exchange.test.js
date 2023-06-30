@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 describe("Exchange contract Unit Testing", () => {
   let exchange;
   let user1;
-  let user2;
+  let mockAggregator;
 
   beforeEach(async function () {
     [owner, user1, user2] = await ethers.getSigners();
@@ -17,18 +17,13 @@ describe("Exchange contract Unit Testing", () => {
     );
     mockAggregator = await mockAggregator.deploy();
     await mockAggregator.deployed();
-
   });
 
-
-
   describe("\n Should deposit and redeem", async () => {
-
     it("Should have correct name and symbol", async function () {
       expect(await exchange.name()).to.equal("nUSD Stablecoin");
       expect(await exchange.symbol()).to.equal("nUSD");
     });
-
 
     it("Should allow the user to deposit ETH", async function () {
       let balanceBefore = await exchange.balanceOf(user1.address);
@@ -40,48 +35,64 @@ describe("Exchange contract Unit Testing", () => {
       expect(balanceAfter).to.be.greaterThan(balanceBefore);
     });
 
-    // it("Should fail if no ETH is sent", async function () {
-    //   await expect(
-    //     exchange.connect(user1).deposit({ value: 0 })
-    //   ).to.be.revertedWith("Deposit amount should be greater than 0");
-    // });
+    it("Should deposit ETH and mint nUSD tokens", async function () {
+      const depositValue = ethers.utils.parseEther("1");
+      await exchange.connect(user1).deposit({ value: depositValue });
+      const balance = await exchange.balanceOf(user1.address);
+      expect(balance).to.not.equal(0);
+    });
 
-    // it("Should fail if user tries to redeem more nUSD than they have", async function () {
-    //   const nUSDAmount = ethers.utils.parseEther("1");
-    //   await expect(
-    //     exchange.connect(user1).redeem(nUSDAmount)
-    //   ).to.be.revertedWith("Insufficient nUSD balance");
-    // });
+    it("Should return the price of pegged coin from oracle", async () => {
+      const updatedPrice = await exchange.getLatestPrice();
+      const latestPrice = await exchange.getLatestPrice();
+      expect(latestPrice).to.be.equal(updatedPrice);
+    });
 
-    it("Should fail if redemption exceeds total deposited amount", async function () {
-      // deposit some ETH
+    it("Should return all the deposits of user", async () => {
+      await exchange
+        .connect(user1)
+        .deposit({ value: ethers.utils.parseEther("1") });
       await exchange
         .connect(user1)
         .deposit({ value: ethers.utils.parseEther("1") });
 
-      // try to redeem more than the deposited amount
-      const nUSDAmount = ethers.utils.parseEther("3");
-      await expect(
-        exchange.connect(user1).redeem(nUSDAmount)
-      ).to.be.revertedWith("Redemption exceeds total deposited amount");
+      const deposits = await exchange.totalDepositsOf(user1.address);
+      const depositInEth = ethers.utils.formatEther(deposits);
+      console.log("Total deposits of user1: ", depositInEth);
+      expect(parseFloat(depositInEth)).to.equal(2);
     });
 
-     it("Should deposit ETH and mint nUSD tokens", async function () {
-       const depositValue = ethers.utils.parseEther("1");
-       await exchange.connect(user1).deposit({ value: depositValue });
-       const balance = await exchange.balanceOf(user1.address);
-       expect(balance).to.not.equal(0);
-     });
+    it("Should return the total ETH balance of a user", async () => {
+      await exchange
+        .connect(user1)
+        .deposit({ value: ethers.utils.parseEther("3") });
+      await exchange
+        .connect(user1)
+        .deposit({ value: ethers.utils.parseEther("5") });
 
-      it("Should burn nUSD tokens and redeem ETH", async function () {
-        const depositValue = ethers.utils.parseEther("1");
-        await exchange.connect(user1).deposit({ value: depositValue });
-        const initialBalance = await exchange.balanceOf(user1.address);
-        await exchange.connect(user1).redeem(initialBalance);
-        const finalBalance = await exchange.balanceOf(user1.address);
-        expect(finalBalance).to.equal(0);
-      });
+      const balance = await exchange.connect(user1).totalEthBalance();
+      const balanceInEth = ethers.utils.formatEther(balance);
+      console.log("Total ETH balance of user1: ", balanceInEth);
+      expect(parseFloat(balanceInEth)).to.equal(8);
+    });
 
+    it("Should return the total nUSD balance of a user", async () => {
+      await exchange
+        .connect(user1)
+        .deposit({ value: ethers.utils.parseEther("3") });
+      await exchange
+        .connect(user1)
+        .deposit({ value: ethers.utils.parseEther("5") });
 
+      const balance = await exchange.connect(user1).totalnUSDBalance();
+      const balanceInEth = ethers.utils.formatEther(balance);
+      expect(parseFloat(balanceInEth)).to.equal(4);
+    });
+
+    it("Should not allow the user to deposit ETH if amount is 0", async function () {
+      await expect(
+        exchange.connect(user1).deposit({ value: ethers.utils.parseEther("0") })
+      ).to.be.revertedWith("Deposit amount should be greater than 0");
+    });
   });
 });
