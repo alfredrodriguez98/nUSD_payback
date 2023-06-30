@@ -43,23 +43,6 @@ contract MockAggregatorV3Interface is AggregatorV3Interface {
         roundId++;
     }
 
-    /// @notice This function is used to set the aggregator address for the mock aggregator contract
-    /// @param aggregatorAddress The address of the aggregator contract to set for the mock aggregator contract testing
-    /// @dev This function is used for testing purposes only
-
-    function setAggregatorAddress(address aggregatorAddress) public {
-        require(
-            aggregatorAddress != address(0),
-            "Aggregator address cannot be zero address"
-        );
-        require(
-            aggregatorAddress != address(this),
-            "Aggregator address cannot be this contract address"
-        );
-
-        priceFeed = MockAggregatorV3Interface(aggregatorAddress);
-    }
-
     /// @notice This function is used to get the latest price from the aggregator contract
     /// @dev This function is used for testing purposes only
 
