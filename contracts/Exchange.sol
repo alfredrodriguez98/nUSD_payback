@@ -52,38 +52,31 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
         emit Deposit(msg.sender, msg.value, nUSDAmount);
     }
 
-    // Allows users to convert their nUSD back into either ETH at the current exchange.
-    function redeem(uint256 nUSDAmount) external nonReentrant {
+    function maxPayback(uint256 nUSDBalance) public view returns (uint256) {
         uint256 ethUsdPrice = getLatestPrice();
-        // We use ETH's price in USD to determine the amount of ETH to return.
-        uint256 ethAmount = (nUSDAmount * 2) / ethUsdPrice;
+        return nUSDBalance = (_deposits[msg.sender] * ethUsdPrice) / 2;
+    }
 
-        // Check that the redemption does not exceed the total deposited amount.
+    // Allows users to convert their nUSD back into either ETH at the current exchange.
+    function redeem(uint256 nUSDBalance)
+        external
+        nonReentrant
+        returns (uint256)
+    {
+        uint256 maxPayableCashback = maxPayback(nUSDBalance);
         require(
-            ethAmount <= _deposits[msg.sender],
-            "Redemption exceeds total deposited amount"
+            nUSDBalance <= maxPayableCashback,
+            "Payback amount should be less than or equal to max payable cashback"
         );
-
         // Ensure the user has enough nUSD to redeem
-        require(
-            balanceOf(msg.sender) >= nUSDAmount,
-            "Insufficient nUSD balance"
-        );
+        require(nUSDBalance > 0, "Insufficient nUSD balance");
 
-        // Ensure the contract has enough ETH to redeem
-        require(
-            address(this).balance >= ethAmount,
-            "Insufficient ETH balance in the contract"
-        );
+        //Burn nUSD tokens
+        _burn(msg.sender, nUSDBalance);
+        // Transfer ETH to user
+        payable(msg.sender).transfer(nUSDBalance);
 
-        _burn(msg.sender, nUSDAmount);
-        payable(msg.sender).transfer(ethAmount);
-        _redemptionCount[msg.sender] += 1;
-
-        // Update the total deposited amount
-        _deposits[msg.sender] -= ethAmount; // is this required
-
-        emit Redemption(msg.sender, nUSDAmount, ethAmount);
+        emit Redemption(msg.sender, nUSDBalance, maxPayableCashback);
     }
 
     function depositsOf(address account) external view returns (uint256) {
@@ -97,7 +90,7 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
         return uint256(price / 1e8);
     }
 
-    function totalDepositsOf(address account) external view returns (uint256) {
+    function totalDepositsOf(address account) public view returns (uint256) {
         return _deposits[account];
     }
 
@@ -109,7 +102,11 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
         return _redemptionCount[account];
     }
 
-    function totalEthBalance() external view returns (uint256) {
+    function totalEthBalance() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    function totalnUSDBalance() public view returns (uint256) {
+        return totalEthBalance() / 2;
     }
 }
