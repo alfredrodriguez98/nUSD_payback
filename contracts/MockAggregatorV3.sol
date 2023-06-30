@@ -26,9 +26,8 @@ contract MockAggregatorV3Interface is AggregatorV3Interface {
     uint256 private updatedAt;
 
     constructor() {
-        roundId = 1;
-        price = 30000000; // Setting an initial price for testing
-        updatedAt = block.timestamp;
+
+       
     }
 
     /// @notice This function is used to set the price for the mock aggregator contract

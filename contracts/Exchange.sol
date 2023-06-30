@@ -7,6 +7,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./Stablecoin.sol";
 
+/// @title Exchange contract for nUSD Stablecoin
+/// @notice This contract is used to deposit ETH and obtain nUSD tokens as cashback
+/// @dev This contract imports several helper contracts from openzeppelin
+
 contract Exchange is ERC20, Ownable, ReentrancyGuard {
     // Mapping each user address to their deposits
     mapping(address => uint256) private _deposits;
@@ -27,7 +31,7 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
         uint256 ethRedeemed
     );
 
-    // Price Feed of ETH/USD
+    // Price Feed of ETH/USD - Exclusively for polygon mumbai testnet
     constructor() ERC20("nUSD Stablecoin", "nUSD") {
         priceFeed = AggregatorV3Interface(
             0x0715A7794a1dc8e42615F059dD6e406A6594651A
@@ -35,7 +39,8 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
         _mint(msg.sender, 100000 * (10**uint256(decimals())));
     }
 
-    //  Enables users to deposit ETH and obtain 50% of nUSD token as cashback
+    /// @dev This contract deposits ETH from users to the contract
+
     function deposit() external payable nonReentrant {
         uint256 ethUsdPrice = getLatestPrice();
         // We use ETH's price in USD to determine the amount of nUSD tokens to mint.
@@ -49,15 +54,26 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
         _mint(msg.sender, nUSDAmount);
         _deposits[msg.sender] += msg.value;
 
+        //Event Deposit is emitted upon successful deposit
+
         emit Deposit(msg.sender, msg.value, nUSDAmount);
     }
 
+    /// @dev Used to calculate the maximum payback for a certain ETH deposited into contract
+    /// @param nUSDBalance is the total payback locked in the form of custom stablecoin
+    ///@return payBack the total payable cashback after calculation
+
     function maxPayback(uint256 nUSDBalance) public view returns (uint256) {
         uint256 ethUsdPrice = getLatestPrice();
-        return nUSDBalance = (_deposits[msg.sender] * ethUsdPrice) / 2;
+        uint256 payBack = (nUSDBalance * ethUsdPrice) / 2;
+        return payBack;
     }
 
-    // Allows users to convert their nUSD back into either ETH at the current exchange.
+    /// @notice Funciton which allows users to redeem their collected tokens
+    /// @dev The payback is given for amount accumulated in stablecoin
+    /// @param nUSDBalance is the total balace accumulated for deposits made in ETH
+    /// @return the total payable amount
+
     function redeem(uint256 nUSDBalance)
         external
         nonReentrant
@@ -75,25 +91,23 @@ contract Exchange is ERC20, Ownable, ReentrancyGuard {
         _burn(msg.sender, nUSDBalance);
         // Transfer ETH to user
         payable(msg.sender).transfer(nUSDBalance);
-
+        //Emit event Redemption upon successful operation
         emit Redemption(msg.sender, nUSDBalance, maxPayableCashback);
     }
 
-    function depositsOf(address account) external view returns (uint256) {
-        return _deposits[account];
-    }
-
     //View functions
-    // Get the latest ETH price in USD
+    // Fetches the latest ETH price in USD
     function getLatestPrice() public view returns (uint256) {
         (, int256 price, , , ) = priceFeed.latestRoundData();
         return uint256(price / 1e8);
     }
 
+    //Displays total value deposits in ETH
     function totalDepositsOf(address account) public view returns (uint256) {
         return _deposits[account];
     }
 
+    //Displays the number of times user has redeemed the cashback in stablecoin
     function totalRedemptionsOf(address account)
         external
         view

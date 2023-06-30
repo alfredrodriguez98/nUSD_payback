@@ -20,7 +20,11 @@ contract Stablecoin is ERC20, Ownable {
         return price;
     }
 
-    // Adjust the supply of the coin based on the price of USD.
+    /// @notice Adjusts the mint and burn operations of stablecoin
+    /// @dev For the sake of simplicity nUSD is pegged with USD. If USD increases, nUSD is minted, else it is burnt. This approach is known as hard pegging
+    /// @dev The price of USD is obtained from Chainlink's ETH/USD price feed
+    /// @dev The price is compared with the current price of USD from oracle
+
     function adjustSupply() public {
         int price = getLatestPrice();
          require(price != 0, "Price cannot be zero");
